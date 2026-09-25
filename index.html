@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Акт осмотра шин/колес</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 10px;
+        line-height: 1.4;
+        font-size: 12px;
+        background: #f7f7f7;
+    }
+    h1 {
+        text-align: center;
+        margin: 6px 0 10px;
+        font-size: 16px;
+    }
+    h2 {
+        font-size: 14px;
+        margin: 10px 0 6px;
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 3px;
+    }
+    h3 {
+        font-size: 13px;
+        margin: 0 0 6px;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 10px;
+    }
+    th, td {
+        border: 1px solid #ddd;
+        padding: 4px;
+        text-align: center;
+        font-size: 11px;
+    }
+    th { background-color: #f2f2f2; }
+    .checkbox-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 3px;
+        justify-content: center;
+    }
+    .checkbox-group label {
+        margin-right: 3px;
+        font-size: 11px;
+        white-space: nowrap;
+    }
+    .section { margin-bottom: 10px; }
+    .section-title {
+        font-weight: bold;
+        margin-bottom: 5px;
+        font-size: 12px;
+    }
+    .signature-section {
+        margin-top: 15px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .signature-box {
+        width: 100%;
+        text-align: center;
+        border-top: 1px solid #ddd;
+        padding-top: 8px;
+    }
+    input[type="text"], input[type="date"], select, textarea {
+        width: 100%;
+        padding: 4px;
+        font-size: 11px;
+        box-sizing: border-box;
+    }
+    textarea { height: 60px; }
+    .voice-input {
+        display: flex;
+        align-items: center;
+        gap: 3px;
+    }
+    .voice-input input, .voice-input textarea { flex-grow: 1; }
+    .voice-input button {
+        background: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 3px;
+        padding: 4px 6px;
+        cursor: pointer;
+        font-size: 10px;
+        white-space: nowrap;
+    }
+    .wheel-section {
+        margin-bottom: 10px;
+        border: 1px solid #eee;
+        padding: 8px;
+        border-radius: 3px;
+        background: #fff;
+    }
+    .other-manufacturer {
+        display: none;
+        margin-top: 5px;
+    }
+    .action-buttons {
+        display: flex;
+        gap: 10px;
+        margin-top: 15px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    .action-buttons button {
+        padding: 8px 12px;
+        font-size: 12px;
+        cursor: pointer;
+        border: none;
+        border-radius: 4px;
+    }
+    .save-btn  { background-color: #2196F3; color: white; }
+    .share-btn { background-color: #FF9800; color: white; }
+    .print-btn { background-color: #9E9E9E; color: white; }
+    .done-btn  { background-color: #4CAF50; color: white; }
+    .link-container {
+        margin-top: 10px;
+        text-align: center;
+        font-size: 12px;
+        word-break: break-all;
+    }
+    .link-container a { color: #2196F3; text-decoration: none; }
+
+    /* -------- Пошаговая форма -------- */
+    .stepper {
+        display: flex;
+        justify-content: center;
+        gap: 6px;
+        margin: 10px 0;
+        flex-wrap: wrap;
+    }
+    .stepper .step {
+        padding: 6px 10px;
+        border: 1px solid #ccc;
+        border-radius: 16px;
+        font-size: 11px;
+        background: #fff;
+        cursor: pointer;
+    }
+    .stepper .step.active {
+        background: #2196F3;
+        color: #fff;
+        border-color: #2196F3;
+    }
+    .step-panel { display: none; }
+    .step-panel.active { display: block; }
+    .step-nav {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        margin-top: 8px;
+    }
+    .step-nav button {
+        padding: 8px 14px;
+        border: none;
+        border-radius: 4px;
+        background: #2196F3;
+        color: #fff;
+        cursor: pointer;
+        font-size: 12px;
+    }
+    .step-nav button:disabled {
+        background: #bbb;
+        cursor: not-allowed;
+    }
+
+    /* -------- Печатная форма (скрыта на экране) -------- */
+    #printTable { display: none; }
+
+    /* Стили для печати / PDF */
+    @media print {
+        body {
+            margin: 0;
+            padding: 0;
+            font-size: 9px;
+            background: #fff;
+        }
+        .no-print { display: none !important; }
+        #inspectionForm { display: none !important; }
+        #printTable { display: block !important; }
+        @page { size: A4 portrait; margin: 5mm; }
+    }
+</style>
+</head>
+<body>
+
+<h1>Акт осмотра шин/колес в сборе/дисков</h1>
+
+<form id="inspectionForm">
+    <!-- ============ ОСНОВНАЯ ИНФОРМАЦИЯ ============ -->
+    <div class="section">
+        <div class="section-title">Основная информация</div>
+        <table>
+            <tr><th>№ З/Н</th><th>ФИО</th></tr>
+            <tr>
+                <td>
+                    <div class="voice-input">
+                        <input type="text" id="orderNumber" name="orderNumber">
+                        <button type="button" onclick="startVoiceInput('orderNumber')" class="no-print">🎤</button>
+                    </div>
+                </td>
+                <td>
+                    <div class="voice-input">
+                        <input type="text" id="fio" name="fio">
+                        <button type="button" onclick="startVoiceInput('fio')" class="no-print">🎤</button>
+                    </div>
+                </td>
+            </tr>
+            <tr><th>Модель</th><th>Дата</th></tr>
+            <tr>
+                <td>
+                    <div class="voice-input">
+                        <input type="text" id="model" name="model">
+                        <button type="button" onclick="startVoiceInput('model')" class="no-print">🎤</button>
+                    </div>
+                </td>
+                <td><input type="date" id="date" name="date"></td>
+            </tr>
+            <tr><th>VIN</th><th>Сезонность</th></tr>
+            <tr>
+                <td>
+                    <div class="voice-input">
+                        <input type="text" id="vin" name="vin">
+                        <button type="button" onclick="startVoiceInput('vin')" class="no-print">🎤</button>
+                    </div>
+                </td>
+                <td>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" name="seasonality" value="зима"> зима</label>
+                        <label><input type="checkbox" name="seasonality" value="ШИП"> ШИП</label>
+                        <label><input type="checkbox" name="seasonality" value="неШИП"> неШИП</label>
+                        <label><input type="checkbox" name="seasonality" value="лето"> лето</label>
+                        <label><input type="checkbox" name="seasonality" value="всесезонная"> всесезонная</label>
+                    </div>
+                </td>
+            </tr>
+            <tr><th>Тип диска</th><th>Цвет</th></tr>
+            <tr>
+                <td>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" name="diskType" value="литой"> литой</label>
+                        <label><input type="checkbox" name="diskType" value="стальной"> стальной</label>
+                        <label><input type="checkbox" name="diskType" value="Performance"> Performance</label>
+                    </div>
+                </td>
+                <td>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" name="diskColor" value="серебро"> серебро</label>
+                        <label><input type="checkbox" name="diskColor" value="чёрный"> чёрный</label>
+                    </div>
+                </td>
+            </tr>
+            <tr><th>Количество лучей</th><th>Производитель резины</th></tr>
+            <tr>
+                <td><input type="text" id="spokeCount" name="spokeCount"></td>
+                <td>
+                    <select id="tireManufacturer" name="tireManufacturer" onchange="toggleOtherManufacturer()">
+                        <option value="">Выберите производителя</option>
+                        <option value="Nokian">Nokian</option>
+                        <option value="Pirelli">Pirelli</option>
+                        <option value="Goodyear">Goodyear</option>
+                        <option value="Michelin">Michelin</option>
+                        <option value="Bridgestone">Bridgestone</option>
+                        <option value="Continental">Continental</option>
+                        <option value="Dunlop">Dunlop</option>
+                        <option value="Другие">Другие</option>
+                    </select>
+                    <div id="otherManufacturer" class="other-manufacturer">
+                        <input type="text" name="otherManufacturer" placeholder="Укажите производителя">
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- ============ ИНДИКАТОР ШАГОВ ============ -->
+    <div class="stepper no-print">
+        <div class="step active" data-step="0" onclick="goToStep(0)">Переднее левое</div>
+        <div class="step" data-step="1" onclick="goToStep(1)">Переднее правое</div>
+        <div class="step" data-step="2" onclick="goToStep(2)">Заднее левое</div>
+        <div class="step" data-step="3" onclick="goToStep(3)">Заднее правое</div>
+    </div>
+
+    <!-- ============ ШАГ 0: ПЕРЕДНЕЕ ЛЕВОЕ ============ -->
+    <div class="step-panel active" data-panel="0">
+        <div class="wheel-section">
+            <h2>Передняя ось — Переднее левое колесо</h2>
+            <table>
+                <tr><th>Параметр</th><th>Значение</th></tr>
+                <tr><td>Ширина</td><td><input type="text" name="frontLeftWidth"></td></tr>
+                <tr><td>Высота</td><td><input type="text" name="frontLeftHeight"></td></tr>
+                <tr><td>Runflat</td><td><div class="checkbox-group">
+                    <label><input type="checkbox" name="frontLeftRunflat" value="Да"> Да</label>
+                    <label><input type="checkbox" name="frontLeftRunflat" value="Нет"> Нет</label>
+                </div></td></tr>
+                <tr><td>Состояние шин</td><td><div class="checkbox-group">
+                    <label><input type="checkbox" name="frontLeftTireCondition" value="Новый"> Новый</label>
+                    <label><input type="checkbox" name="frontLeftTireCondition" value="Б/У"> Б/У</label>
+                </div></td></tr>
+                <tr><td>Состояние дисков</td><td><div class="checkbox-group">
+                    <label><input type="checkbox" name="frontLeftDiskCondition" value="Новый"> Новый</label>
+                    <label><input type="checkbox" name="frontLeftDiskCondition" value="Б/У"> Б/У</label>
+                </div></td></tr>
+                <tr><td>Радиус</td><td>
+                    <select name="frontLeftRadius">
+                        <option value="">Выберите радиус</option>
+                        <option>R15</option><option>R16</option><option>R17</option>
+                        <option>R18</option><option>R19</option><option>R20</option>
+                        <option>R21</option><option>R22</option>
+                    </select>
+                </td></tr>
+                <tr><td>Количество шипов</td><td><div class="checkbox-group">
+                    <label><input type="checkbox" name="frontLeftSpikes" value="<70%"> &lt;70%</label>
+                    <label><input type="checkbox" name="frontLeftSpikes" value=">70%"> &gt;70%</label>
+                </div></td></tr>
+                <tr><td>Следы ремонта</td><td><div class="checkbox-group">
+                    <label><input type="checkbox" name="frontLeftRepairTraces" value="Да"> Да</label>
+                    <label><input type="checkbox" name="frontLeftRepairTraces" value="Нет"> Нет</label>
+                </div></td></tr>
+                <tr><td>Повреждения шины</td><td><div class="checkbox-group">
+                    <label><input type="checkbox" name="frontLeftTireDamage" value="Да"> Да</label>
+                    <label><input type="checkbox" name="frontLeftTireDamage" value="Нет"> Нет</label>
+                </div></td></tr>
+                <tr><td>Боковые надрезы</td><td><div class="checkbox-group">
+                    <label><input type="checkbox" name="frontLeftSideCuts" value="Да"> Да</label>
+                    <label><input type="checkbox" name="frontLeftSideCuts" value="Нет"> Нет</label>
+                </div></td></tr>
+                <tr><td>Высота протектора (мм)</td><td><div class="checkbox-group">
+                    <label><input type="checkbox" name="frontLeftTreadHeight" value="0-5"> 0-5</label>
+                    <label><input type="checkbox" name="frontLeftTreadHeight" value="5-12"> 5-12</label>
+                </div></td></tr>
+                <tr><td>Равномерность износа</td><td><div class="checkbox-group">
+                    <label><input type="checkbox" name="frontLeftWearUniformity" value="Да"> Да</label>
+                    <label><input type="checkbox" name="frontLeftWearUniformity" value="Нет"> Нет</label>
+                </div></td></tr>
+                <tr><td>Наличие колпака</td><td><div class="checkbox-group">
+                    <label><input type="checkbox" name="frontLeftHubcap" value="Да"> Да</label>
+                    <label><input type="checkbox" name="frontLeftHubcap" value="Нет"> Нет</label>
+                </div></td></tr>
+                <tr><td>Царапины/сколы</td><td><div class="checkbox-group">
+                    <label><input type="checkbox" name="frontLeftScratches" value="Да"> Да</label>
+                    <label><input type="checkbox" name="frontLeftScratches" value="Нет"> Нет</label>
+                </div></td></tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- ============ ШАГ 1: ПЕРЕДНЕЕ ПРАВОЕ ============ -->
+    <div class="step-panel" data-panel="1">
+        <div class="wheel-section">
+            <h2>Передняя ось — Переднее правое колесо</h2>
+            <table>
+                <tr><th>Параметр</th><th>Значение</th></tr>
+                <tr><td>Ширина</td><td><input type="text" name="frontRightWidth"></td></tr>
+                <tr><td>Высота</td><td><input type="text" name="frontRightHeight"></td></tr>
+                <tr><td>Runflat</td><td><div class="checkbox-group">
+                    <label><input type="checkbox" name="frontRightRunflat" value="Да"> Да</label>
+                    <label><input type="checkbox" name="frontRightRunflat" value="Нет"> Нет</label>
+                </div></td></tr>
+                <tr><td>Состояние шин</td><td><div class="checkbox-group">
+                    <label><input type="checkbox" name="frontRightTireCondition" value="Новый"> Новый</label>
+                    <label><input type="checkbox" name="frontRightTireCondition" value="Б/У"> Б/У</label>
+                </div></td></tr>
+                <tr><td>Состояние дисков</td><td><div class="checkbox-group">
+                    <label><input type="checkbox" name="frontRightDiskCondition" value="Новый"> Новый</label>
+                    <label><input type="checkbox" name="frontRightDiskCondition" value="Б/У"> Б/У</label>
+                </div></td></tr>
+                <tr><td>Радиус</td><td>
+                    <select name="frontRightRadius">
+                        <option value="">Выберите радиус</option>
+                        <option>R15</option><option>R16</option><option>R17</option>
+                        <option>R18</option><option>R19</option><option>R20</option>
+                        <option>R21</option><option>R22</option>
+                    </select>
+                </td></tr>
+                <tr><td>Количество шипов</td><td><div class="checkbox-group">
+                    <label><input type="checkbox" name="frontRightSpikes" value="<70%"> &lt;70%</label>
+                    <label><input type="checkbox" name="frontRightSpikes" value=">70%"> &gt;70%</label>
+                </div></td></tr>
+                <tr><td>Следы ремонта</td><td><div class="checkbox-group">
+                    <label><input type="checkbox" name="frontRightRepairTraces" value="Да"> Да</label>
+                    <label><input type="checkbox" name="frontRightRepairTraces" value="Нет"> Нет</label>
+                </div></td></tr>
+                <tr><td>Повреждения шины</td><td><div class="checkbox-group">
+                    <label><input type="checkbox" name="frontRightTireDamage" value="Да"> Да</label>
+                    <label><input type="checkbox" name="frontRightTireDamage" value="Нет"> Нет</label>
+                </div></td></tr>
+                <tr><td>Боковые надрезы</td><td><div class="checkbox-group">
+                    <label><input type="checkbox" name="frontRightSideCuts" value="Да"> Да</label>
+                    <label><input type="checkbox" name="frontRightSideCuts" value="Нет"> Нет</label>
+                </div></td></tr>
+                <tr><td>Высота протектора (мм)</td><td><div class="checkbox-group">
+                    <label><input type="checkbox" name="frontRightTreadHeight" value="0-5"> 0-5</label>
+                    <label><input type="checkbox" name="frontRightTreadHeight" value="5-12"> 5-12</label>
+                </div></td></tr>
+                <tr><td>Равномерность износа</td><td><div class="checkbox-group">
+                    <label><input type="checkbox" name="frontRightWearUniformity" value="Да"> Да</label>
+                    <label><input type="checkbox" name="frontRightWearUniformity" value="Нет"> Нет</label>
+                </div></td></tr>
+                <tr><td>Наличие колпака</td><td><div class="checkbox-group">
+                    <label><input type="checkbox" name="frontRightHubcap" value="Да"> Да</label>
+                    <label><input type="checkbox" name="frontRightHubcap" value="Нет"> Нет</label>
+                </div></td></tr>
+                <tr><td>Царапины/сколы</td><td><div class="checkbox-group">
+                    <label><input type="checkbox" name="frontRightScratches" value="Да"> Да</label>
+                    <label><input type="checkbox" name="frontRightScratches" value="Нет"> Нет</label>
+                </div></td></tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- ============ ШАГ 2: ЗАДНЕЕ ЛЕВОЕ ============ -->
+    <div class="step-panel" data-panel="2">
+        <div class="wheel-section">
+            <h2>Задняя ось — Заднее левое колесо</h2>
+            <table>
+                <tr><th>Параметр</th><th>Значение</th></tr>
+                <tr><td>Ширина</td><td><input type="text" name="rearLeftWidth"></td></tr>
+                <tr><td>Высота</td><td><input type="text" name="rearLeftHeight"></td></tr>
+                <tr><td>Runflat</td><td><div class="checkbox-group">
+                    <label><input type="checkbox" name="rearLeftRunflat" value="Да"> Да</label>
+                    <label><input type="checkbox" name="rearLeftRunflat" value="Нет"> Нет</label>
+                </div></td></tr>
+                <tr><td>Состояние шин</td><td><div class="checkbox-group">
+                    <label><input type="checkbox" name="rearLeftTireCondition" value="Новый"> Новый</label>
+                    <label><input type="checkbox" name="rearLeftTireCondition" value="Б/У"> Б/У</label>
+                </div></td></tr>
+                <tr><td>Состояние дисков</td><td><div class="checkbox-group">
+                    <label><input type="checkbox" name="rearLeftDiskCondition" value="Новый"> Новый</label>
+                    <label><input type="checkbox" name="rearLeftDiskCondition" value="Б/У"> Б/У</label>
+                </div></td></tr>
+                <tr><td>Радиус</td><td>
+                    <select name="rearLeftRadius">
+                        <option value="">Выберите радиус</option>
+                        <option>R15</option><option>R16</option><option>R17</option>
+                        <option>R18</option><option>R19</option><option>R20</option>
+                        <option>R21</option><option>R22</option>
+                    </select>
+                </td></tr>
+                <tr><td>Количество шипов</td><td><div class="checkbox-group">
+                    <label><input type="checkbox" name="rearLeftSpikes" value="<70%"> &lt;70%</label>
+                    <label><input type="checkbox" name="rearLeftSpikes" value=">70%"> &gt;70%</label>
+                </div></td></tr>
+                <tr><td>Следы ремонта</td><td><div class="checkbox-group">
+                    <label><input type="checkbox" name="rearLeftRepairTraces" value="Да"> Да</label>
+                    <label><input type="checkbox" name="rearLeftRepairTraces" value="Нет"> Нет</label>
+                </div></td></tr>
+                <tr><td>Повреждения шины</td><td><div class="checkbox-group">
+                    <label><input type="checkbox" name="rearLeftTireDamage" value="Да"> Да</label>
+                    <label><input type="checkbox" name="rearLeftTireDamage" value="Нет"> Нет</label>
+                </div></td></tr>
+                <tr><td>Боковые надрезы</td><td><div class="checkbox-group">
+                    <label><input type="checkbox" name="rearLeftSideCuts" value="Да"> Да</label>
+                    <label><input type="checkbox" name="rearLeftSideCuts" value="Нет"> Нет</label>
+                </div></td></tr>
+                <tr><td>Высота протектора (мм)</td><td><div class="checkbox-group">
+                    <label><input type="checkbox" name="rearLeftTreadHeight" value="0-5"> 0-5</label>
+                    <label><input type="checkbox" name="rearLeftTreadHeight" value="5-12"> 5-12</label>
+                </div></td></tr>
+                <tr><td>Равномерность износа</td><td><div class="checkbox-group">
+                    <label><input type="checkbox" name="rearLeftWearUniformity" value="Да"> Да</label>
+                    <label><input type="checkbox" name="rearLeftWearUniformity" value="Нет"> Нет</label>
+                </div></td></tr>
+                <tr><td>Наличие колпака</td><td><div class="checkbox-group">
+                    <label><input type="checkbox" name="rearLeftHubcap" value="Да"> Да</label>
+                    <label><input type="checkbox" name="rearLeftHubcap" value="Нет"> Нет</label>
+                </div></td></tr>
+                <tr><td>Царапины/сколы</td><td><div class="checkbox-group">
+                    <label><input type="checkbox" name="rearLeftScratches" value="Да"> Да</label>
+                    <label><input type="checkbox" name="rearLeftScratches" value="Нет"> Нет</label>
+                </div></td></tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- ============ ШАГ 3: ЗАДНЕЕ ПРАВОЕ ============ -->
+    <div class="step-panel" data-panel="3">
+        <div class="wheel-section">
+            <h2>Задняя ось — Заднее правое колесо</h2>
+            <table>
+                <tr><th>Параметр</th><th>Значение</th></tr>
+                <tr><td>Ширина</td><td><input type="text" name="rearRightWidth"></td></tr>
+                <tr><td>Высота</td><td><input type="text" name="rearRightHeight"></td></tr>
+                <tr><td>Runflat</td><td><div class="checkbox-group">
+                    <label><input type="checkbox" name="rearRightRunflat" value="Да"> Да</label>
+                    <label><input type="checkbox" name="rearRightRunflat" value="Нет"> Нет</label>
+                </div></td></tr>
+                <tr><td>Состояние шин</td><td><div class="checkbox-group">
+                    <label><input type="checkbox" name="rearRightTireCondition" value="Новый"> Новый</label>
+                    <label><input type="checkbox" name="rearRightTireCondition" value="Б/У"> Б/У</label>
+                </div></td></tr>
+                <tr><td>Состояние дисков</td><td><div class="checkbox-group">
+                    <label><input type="checkbox" name="rearRightDiskCondition" value="Новый"> Новый</label>
+                    <label><input type="checkbox" name="rearRightDiskCondition" value="Б/У"> Б/У</label>
+                </div></td></tr>
+                <tr><td>Радиус</td><td>
+                    <select name="rearRightRadius">
+                        <option value="">Выберите радиус</option>
+                        <option>R15</option><option>R16</option><option>R17</option>
+                        <option>R18</option><option>R19</option><option>R20</option>
+                        <option>R21</option><option>R22</option>
+                    </select>
+                </td></tr>
+                <tr><td>Количество шипов</td><td><div class="checkbox-group">
+                    <label><input type="checkbox" name="rearRightSpikes" value="<70%"> &lt;70%</label>
+                    <label><input type="checkbox" name="rearRightSpikes" value=">70%"> &gt;70%</label>
+                </div></td></tr>
+                <tr><td>Следы ремонта</td><td><div class="checkbox-group">
+                    <label><input type="checkbox" name="rearRightRepairTraces" value="Да"> Да</label>
+                    <label><input type="checkbox" name="rearRightRepairTraces" value="Нет"> Нет</label>
+                </div></td></tr>
+                <tr><td>Повреждения шины</td><td><div class="checkbox-group">
+                    <label><input type="checkbox" name="rearRightTireDamage" value="Да"> Да</label>
+                    <label><input type="checkbox" name="rearRightTireDamage" value="Нет"> Нет</label>
+                </div></td></tr>
+                <tr><td>Боковые надрезы</td><td><div class="checkbox-group">
+                    <label><input type="checkbox" name="rearRightSideCuts" value="Да"> Да</label>
+                    <label><input type="checkbox" name="rearRightSideCuts" value="Нет"> Нет</label>
+                </div></td></tr>
+                <tr><td>Высота протектора (мм)</td><td><div class="checkbox-group">
+                    <label><input type="checkbox" name="rearRightTreadHeight" value="0-5"> 0-5</label>
+                    <label><input type="checkbox" name="rearRightTreadHeight" value="5-12"> 5-12</label>
+                </div></td></tr>
+                <tr><td>Равномерность износа</td><td><div class="checkbox-group">
+                    <label><input type="checkbox" name="rearRightWearUniformity" value="Да"> Да</label>
+                    <label><input type="checkbox" name="rearRightWearUniformity" value="Нет"> Нет</label>
+                </div></td></tr>
+                <tr><td>Наличие колпака</td><td><div class="checkbox-group">
+                    <label><input type="checkbox" name="rearRightHubcap" value="Да"> Да</label>
+                    <label><input type="checkbox" name="rearRightHubcap" value="Нет"> Нет</label>
+                </div></td></tr>
+                <tr><td>Царапины/сколы</td><td><div class="checkbox-group">
+                    <label><input type="checkbox" name="rearRightScratches" value="Да"> Да</label>
+                    <label><input type="checkbox" name="rearRightScratches" value="Нет"> Нет</label>
+                </div></td></tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- ============ НАВИГАЦИЯ ПО ШАГАМ ============ -->
+    <div class="step-nav no-print">
+        <button type="button" id="prevBtn" onclick="prevStep()" disabled>← Назад</button>
+        <button type="button" id="nextBtn" onclick="nextStep()">Далее →</button>
+    </div>
+
+    <!-- ============ ПРИМЕЧАНИЯ ============ -->
+    <div class="section" style="margin-top:12px;">
+        <div class="section-title">Примечания</div>
+        <div class="voice-input">
+            <textarea id="notes" name="notes"></textarea>
+            <button type="button" onclick="startVoiceInput('notes')" class="no-print">🎤 Добавить</button>
+        </div>
+    </div>
+
+    <div class="signature-section">
+        <div class="signature-box">
+            <p>Осмотр выполнил</p>
+            <p>(ФИО, подпись)</p>
+        </div>
+        <div class="signature-box">
+            <p>С осмотром согласен</p>
+            <p>(ФИО, подпись)</p>
+        </div>
+    </div>
+</form>
+
+<!-- ============ ПЕЧАТНАЯ ФОРМА ============ -->
+<div id="printTable">
+    <h1>Акт осмотра шин/колес в сборе/дисков</h1>
+
+    <div class="section">
+        <div class="section-title">Основная информация</div>
+        <table class="print-main">
+            <tr><th>№ З/Н</th><th>ФИО</th><th>Модель</th><th>Дата</th></tr>
+            <tr>
+                <td id="printOrderNumber"></td>
+                <td id="printFio"></td>
+                <td id="printModel"></td>
+                <td id="printDate"></td>
+            </tr>
+            <tr><th>VIN</th><th>Сезонность</th><th>Тип диска</th><th>Цвет / Лучи</th></tr>
+            <tr>
+                <td id="printVin"></td>
+                <td id="printSeasonality"></td>
+                <td id="printDiskType"></td>
+                <td><span id="printDiskColor"></span> / <span id="printSpokeCount"></span></td>
+            </tr>
+            <tr><th colspan="2">Производитель резины</th><th colspan="2">Примечания</th></tr>
+            <tr>
+                <td colspan="2" id="printTireManufacturer"></td>
+                <td colspan="2" id="printNotes"></td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>Передняя ось</h2>
+        <table class="print-wheels">
+            <tr><th>Параметр</th><th>Переднее левое</th><th>Переднее правое</th></tr>
+            <tr><td>Ширина</td><td id="printFrontLeftWidth"></td><td id="printFrontRightWidth"></td></tr>
+            <tr><td>Высота</td><td id="printFrontLeftHeight"></td><td id="printFrontRightHeight"></td></tr>
+            <tr><td>Runflat</td><td id="printFrontLeftRunflat"></td><td id="printFrontRightRunflat"></td></tr>
+            <tr><td>Состояние шин</td><td id="printFrontLeftTireCondition"></td><td id="printFrontRightTireCondition"></td></tr>
+            <tr><td>Состояние дисков</td><td id="printFrontLeftDiskCondition"></td><td id="printFrontRightDiskCondition"></td></tr>
+            <tr><td>Радиус</td><td id="printFrontLeftRadius"></td><td id="printFrontRightRadius"></td></tr>
+            <tr><td>Количество шипов</td><td id="printFrontLeftSpikes"></td><td id="printFrontRightSpikes"></td></tr>
+            <tr><td>Следы ремонта</td><td id="printFrontLeftRepairTraces"></td><td id="printFrontRightRepairTraces"></td></tr>
+            <tr><td>Повреждения шины</td><td id="printFrontLeftTireDamage"></td><td id="printFrontRightTireDamage"></td></tr>
+            <tr><td>Боковые надрезы</td><td id="printFrontLeftSideCuts"></td><td id="printFrontRightSideCuts"></td></tr>
+            <tr><td>Высота протектора</td><td id="printFrontLeftTreadHeight"></td><td id="printFrontRightTreadHeight"></td></tr>
+            <tr><td>Равномерность износа</td><td id="printFrontLeftWearUniformity"></td><td id="printFrontRightWearUniformity"></td></tr>
+            <tr><td>Наличие колпака</td><td id="printFrontLeftHubcap"></td><td id="printFrontRightHubcap"></td></tr>
+            <tr><td>Царапины/сколы</td><td id="printFrontLeftScratches"></td><td id="printFrontRightScratches"></td></tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>Задняя ось</h2>
+        <table class="print-wheels">
+            <tr><th>Параметр</th><th>Заднее левое</th><th>Заднее правое</th></tr>
+            <tr><td>Ширина</td><td id="printRearLeftWidth"></td><td id="printRearRightWidth"></td></tr>
+            <tr><td>Высота</td><td id="printRearLeftHeight"></td><td id="printRearRightHeight"></td></tr>
+            <tr><td>Runflat</td><td id="printRearLeftRunflat"></td><td id="printRearRightRunflat"></td></tr>
+            <tr><td>Состояние шин</td><td id="printRearLeftTireCondition"></td><td id="printRearRightTireCondition"></td></tr>
+            <tr><td>Состояние дисков</td><td id="printRearLeftDiskCondition"></td><td id="printRearRightDiskCondition"></td></tr>
+            <tr><td>Радиус</td><td id="printRearLeftRadius"></td><td id="printRearRightRadius"></td></tr>
+            <tr><td>Количество шипов</td><td id="printRearLeftSpikes"></td><td id="printRearRightSpikes"></td></tr>
+            <tr><td>Следы ремонта</td><td id="printRearLeftRepairTraces"></td><td id="printRearRightRepairTraces"></td></tr>
+            <tr><td>Повреждения шины</td><td id="printRearLeftTireDamage"></td><td id="printRearRightTireDamage"></td></tr>
+            <tr><td>Боковые надрезы</td><td id="printRearLeftSideCuts"></td><td id="printRearRightSideCuts"></td></tr>
+            <tr><td>Высота протектора</td><td id="printRearLeftTreadHeight"></td><td id="printRearRightTreadHeight"></td></tr>
+            <tr><td>Равномерность износа</td><td id="printRearLeftWearUniformity"></td><td id="printRearRightWearUniformity"></td></tr>
+            <tr><td>Наличие колпака</td><td id="printRearLeftHubcap"></td><td id="printRearRightHubcap"></td></tr>
+            <tr><td>Царапины/сколы</td><td id="printRearLeftScratches"></td><td id="printRearRightScratches"></td></tr>
+        </table>
+    </div>
+
+    <div class="signature-section">
+        <div class="signature-box">
+            <p>Осмотр выполнил</p>
+            <p>(ФИО, таб №, подпись)</p>
+        </div>
+        <div class="signature-box">
+            <p>С осмотром согласен</p>
+            <p>(ФИО, подпись)</p>
+        </div>
+    </div>
+</div>
+
+<div class="link-container no-print">
+    <p>Ссылка на форму: <a id="formLink" href="">Открыть форму</a></p>
+</div>
+
+<div class="action-buttons no-print">
+    <button type="button" class="done-btn" onclick="preparePrint()">Готово</button>
+    <button type="button" class="save-btn" onclick="saveAsPDF()">Сохранить как PDF</button>
+    <button type="button" class="share-btn" onclick="shareForm()">Поделиться</button>
+    <button type="button" class="print-btn" onclick="window.print()">Печать</button>
+</div>
+
+<style>
+    /* -------- Стили только для печатной формы (в т.ч. PDF) -------- */
+    #printTable .print-main th,
+    #printTable .print-main td,
+    #printTable .print-wheels th,
+    #printTable .print-wheels td {
+        padding: 2px 3px;
+        font-size: 9px;
+        line-height: 1.15;
+    }
+    #printTable .print-main th { background: #f2f2f2; }
+    #printTable .print-wheels th { background: #f2f2f2; }
+    #printTable h1 { font-size: 13px; margin: 0 0 6px; }
+    #printTable h2 { font-size: 11px; margin: 6px 0 3px; }
+    #printTable .section { margin-bottom: 5px; }
+    #printTable .section-title { font-size: 10px; margin-bottom: 2px; }
+    #printTable .signature-section { margin-top: 6px; gap: 6px; }
+    #printTable .signature-box { padding-top: 4px; font-size: 9px; }
+    #printTable .signature-box p { margin: 2px 0; }
+    #printTable table { margin-bottom: 4px; }
+</style>
+
+<script>
+    /* ---------- Ссылка на форму ---------- */
+    document.getElementById('formLink').href = window.location.href;
+
+    /* ---------- Производитель "Другие" ---------- */
+    function toggleOtherManufacturer() {
+        const select = document.getElementById('tireManufacturer');
+        const otherDiv = document.getElementById('otherManufacturer');
+        otherDiv.style.display = select.value === 'Другие' ? 'block' : 'none';
+    }
+
+    /* ---------- Голосовой ввод ---------- */
+    function startVoiceInput(fieldId) {
+        const element = document.getElementById(fieldId);
+        if (!element) return;
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            alert('Ваш браузер не поддерживает голосовой ввод. Попробуйте Chrome или Edge.');
+            return;
+        }
+
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'ru-RU';
+        recognition.interimResults = false;
+
+        recognition.onresult = function (event) {
+            const transcript = event.results[0][0].transcript;
+            element.value += (element.value ? ' ' : '') + transcript;
+        };
+        recognition.onerror = function (event) {
+            console.error('Ошибка распознавания речи:', event.error);
+            alert('Ошибка распознавания речи: ' + event.error);
+        };
+        recognition.start();
+    }
+
+    /* ---------- Пошаговая навигация ---------- */
+    let currentStep = 0;
+    const totalSteps = 4;
+
+    function updateStepper() {
+        document.querySelectorAll('.step').forEach((el, i) => {
+            el.classList.toggle('active', i === currentStep);
+        });
+        document.querySelectorAll('.step-panel').forEach((el, i) => {
+            el.classList.toggle('active', i === currentStep);
+        });
+        document.getElementById('prevBtn').disabled = currentStep === 0;
+        document.getElementById('nextBtn').disabled = currentStep === totalSteps - 1;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    function goToStep(n) {
+        if (n < 0 || n >= totalSteps) return;
+        currentStep = n;
+        updateStepper();
+    }
+    function nextStep() { goToStep(currentStep + 1); }
+    function prevStep() { goToStep(currentStep - 1); }
+
+    /* ---------- Универсальный сборщик значений ---------- */
+    function getCheckedValues(formData, name) {
+        return Array.from(formData.getAll(name)).filter(v => v).join(', ') || '';
+    }
+
+    /* ---------- Заполнение печатной формы ---------- */
+    function fillPrintForm() {
+        const form = document.getElementById('inspectionForm');
+        const fd = new FormData(form);
+
+        // Основное
+        document.getElementById('printOrderNumber').textContent = fd.get('orderNumber') || '';
+        document.getElementById('printFio').textContent = fd.get('fio') || '';
+        document.getElementById('printModel').textContent = fd.get('model') || '';
+        document.getElementById('printDate').textContent = fd.get('date') || '';
+        document.getElementById('printVin').textContent = fd.get('vin') || '';
+        document.getElementById('printSeasonality').textContent = getCheckedValues(fd, 'seasonality');
+        document.getElementById('printDiskType').textContent = getCheckedValues(fd, 'diskType');
+        document.getElementById('printDiskColor').textContent = getCheckedValues(fd, 'diskColor');
+        document.getElementById('printSpokeCount').textContent = fd.get('spokeCount') || '';
+
+        const manuf = fd.get('tireManufacturer');
+        const otherManuf = fd.get('otherManufacturer') || '';
+        document.getElementById('printTireManufacturer').textContent =
+            manuf === 'Другие' ? otherManuf : (manuf || '');
+
+        document.getElementById('printNotes').textContent = fd.get('notes') || '';
+
+        // Словарь: префикс печатного id -> имя поля
+        const map = {
+            'FrontLeft': 'frontLeft', 'FrontRight': 'frontRight',
+            'RearLeft': 'rearLeft', 'RearRight': 'rearRight'
+        };
+        const fields = [
+            'Width', 'Height', 'Runflat', 'TireCondition', 'DiskCondition',
+            'Radius', 'Spikes', 'RepairTraces', 'TireDamage', 'SideCuts',
+            'TreadHeight', 'WearUniformity', 'Hubcap', 'Scratches'
+        ];
+
+        for (const [prefix, nameBase] of Object.entries(map)) {
+            fields.forEach(f => {
+                const id = 'print' + prefix + f;
+                const name = nameBase + f;
+                const el = document.getElementById(id);
+                if (!el) return;
+                // Select (Radius) -> get, Checkboxes -> getAll
+                if (f === 'Radius') {
+                    el.textContent = fd.get(name) || '';
+                } else if (f === 'Width' || f === 'Height') {
+                    el.textContent = fd.get(name) || '';
+                } else {
+                    el.textContent = getCheckedValues(fd, name);
+                }
+            });
+        }
+    }
+
+    function preparePrint() {
+        fillPrintForm();
+        alert('Данные зафиксированы! Теперь можно сохранить в PDF или напечатать.');
+    }
+
+    /* ---------- Сохранение в PDF (с временным показом печатного блока) ---------- */
+    function saveAsPDF() {
+        fillPrintForm();
+
+        const printEl = document.getElementById('printTable');
+        const prevDisplay = printEl.style.display;
+
+        // Временно показываем печатный блок (html2canvas не умеет рендерить display:none)
+        printEl.style.display = 'block';
+        // Прячем экранную форму, чтобы не мешала
+        const formEl = document.getElementById('inspectionForm');
+        const formPrev = formEl.style.display;
+        formEl.style.display = 'none';
+
+        const opt = {
+            margin: 5,
+            filename: 'акт_осмотра_шин_колес.pdf',
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, logging: false, useCORS: true, scrollY: 0 },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            pagebreak: { mode: ['avoid-all', 'css'] }
+        };
+
+        // Даём браузеру применить стили, затем генерируем PDF
+        setTimeout(() => {
+            html2pdf().from(printEl).set(opt).save().then(() => {
+                // Возвращаем исходное состояние
+                printEl.style.display = prevDisplay || 'none';
+                formEl.style.display = formPrev || '';
+            }).catch(err => {
+                console.error(err);
+                printEl.style.display = prevDisplay || 'none';
+                formEl.style.display = formPrev || '';
+                alert('Ошибка при создании PDF: ' + err.message);
+            });
+        }, 150);
+    }
+
+    /* ---------- Поделиться ---------- */
+    function shareForm() {
+        fillPrintForm();
+        const printEl = document.getElementById('printTable');
+        const printHtml = printEl.innerHTML;
+
+        const fullHtml = `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Акт осмотра шин/колес</title>
+<style>
+body{font-family:Arial,sans-serif;margin:8px;font-size:9px;}
+h1{font-size:13px;text-align:center;margin:0 0 6px;}
+h2{font-size:11px;margin:6px 0 3px;}
+table{width:100%;border-collapse:collapse;margin-bottom:4px;}
+th,td{border:1px solid #ddd;padding:2px 3px;text-align:center;font-size:9px;line-height:1.15;}
+th{background:#f2f2f2;}
+.section{margin-bottom:5px;}
+.section-title{font-size:10px;font-weight:bold;margin-bottom:2px;}
+.signature-section{margin-top:6px;}
+.signature-box{text-align:center;border-top:1px solid #ddd;padding-top:4px;margin-top:6px;font-size:9px;}
+</style></head><body>${printHtml}</body></html>`;
+
+        const blob = new Blob([fullHtml], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+
+        const email = prompt('Введите email для отправки:', '');
+        if (email) {
+            window.location.href = `mailto:${email}?subject=Акт осмотра шин/колес&body=${encodeURIComponent('Вложение: Акт осмотра шин/колес.')}&attachment=${url}`;
+        } else {
+            // Скачиваем как файл, чтобы не терять данные
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'акт_осмотра_шин_колес.html';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+    }
+
+    /* ---------- Инициализация ---------- */
+    updateStepper();
+</script>
+</body>
+</html>
